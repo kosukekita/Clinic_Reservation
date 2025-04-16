@@ -1,0 +1,33 @@
+[tool.poetry]
+name = "clinic-reservation"
+version = "0.1.0"
+description = "クリニック予約システム - Fast APIとStreamlitによる予約アプリケーション"
+authors = ["Your Name <your.email@example.com>"]
+readme = "README.md"
+package-mode = false
+
+[tool.poetry.dependencies]
+python = ">=3.9,<3.9.7 || >3.9.7,<3.14"
+fastapi = "^0.104.1"
+uvicorn = {extras = ["standard"], version = "^0.23.2"}
+sqlalchemy = "^2.0.23"
+pydantic = {extras = ["email"], version = "^2.4.2"}
+python-jose = {extras = ["cryptography"], version = "^3.3.0"}
+passlib = {extras = ["bcrypt"], version = "^1.7.4"}
+python-multipart = "^0.0.6"
+streamlit = "^1.44.0"
+qrcode = {extras = ["pil"], version = "^7.4.2"}
+pillow = "^10.1.0"
+streamlit-qrcode-scanner = "^0.1.1"
+python-dateutil = "^2.8.2"
+pandas = "^2.1.1"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.4.3"
+black = "^23.10.1"
+isort = "^5.12.0"
+flake8 = "^7.2.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

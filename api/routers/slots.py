@@ -1,8 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
 from datetime import datetime, time, timedelta
 import calendar
+from pydantic import BaseModel
 
 from .. import models, schemas
 from ..database import get_db
@@ -10,6 +11,13 @@ from .auth import get_admin_user, get_current_active_user
 
 router = APIRouter()
 
+# リクエストボディ用のモデルを定義
+class BulkCreateSlotsRequest(BaseModel):
+    days_of_week: List[int]
+    start_hour: int = 17
+    end_hour: int = 19
+    slot_duration_minutes: int = 30
+    capacity: int = 2
 
 @router.post("/slots/", response_model=schemas.TimeSlot)
 def create_slot(
@@ -34,11 +42,7 @@ def create_slot(
 def create_slots_bulk(
     start_date: datetime,
     end_date: datetime,
-    days_of_week: List[int],  # 0=月曜, 1=火曜, ..., 4=金曜
-    start_hour: int = 17,
-    end_hour: int = 19,
-    slot_duration_minutes: int = 30,
-    capacity: int = 2,
+    data: BulkCreateSlotsRequest,
     db: Session = Depends(get_db),
     current_user: schemas.User = Depends(get_admin_user)
 ):
@@ -49,7 +53,7 @@ def create_slots_bulk(
         raise HTTPException(status_code=400, detail="End date must be after start date")
     
     # 曜日の値をチェック (0-6 の範囲内かどうか)
-    for day in days_of_week:
+    for day in data.days_of_week:
         if day < 0 or day > 6:
             raise HTTPException(status_code=400, detail="Days of week must be between 0 and 6")
     
@@ -60,18 +64,18 @@ def create_slots_bulk(
     while current_date <= end_date:
         # 選択された曜日かどうかチェック
         weekday = current_date.weekday()
-        if weekday in days_of_week:
-            # 指定された時間帯に30分おきのスロットを作成
-            for hour in range(start_hour, end_hour):
+        if weekday in data.days_of_week:
+            # 指定された時間帯に指定間隔おきのスロットを作成
+            for hour in range(data.start_hour, data.end_hour):
                 for minute in [0, 30]:
-                    if hour == end_hour and minute > 0:
+                    if hour == data.end_hour and minute > 0:
                         continue
                     
                     start_time = time(hour, minute)
                     
-                    # 30分後の時間を計算
-                    end_minute = (minute + slot_duration_minutes) % 60
-                    end_hour = hour + (minute + slot_duration_minutes) // 60
+                    # スロット時間（分）を計算
+                    end_minute = (minute + data.slot_duration_minutes) % 60
+                    end_hour = hour + (minute + data.slot_duration_minutes) // 60
                     end_time = time(end_hour, end_minute)
                     
                     # スロットが既に存在するかチェック
@@ -86,7 +90,7 @@ def create_slots_bulk(
                             date=current_date,
                             start_time=start_time,
                             end_time=end_time,
-                            capacity=capacity
+                            capacity=data.capacity
                         )
                         db.add(db_slot)
                         created_slots.append(db_slot)

@@ -182,11 +182,19 @@ else:
                     ]
                 )
                 
-                col1, col2 = st.columns(2)
-                with col1:
-                    start_hour = st.slider("開始時間", 8, 20, 17)
-                with col2:
-                    end_hour = st.slider("終了時間", 8, 21, 19)
+                # 時間範囲スライダーを追加
+                time_range = st.slider(
+                    "診療時間帯",
+                    min_value=8,
+                    max_value=21,
+                    value=(17, 19),  # デフォルト値：17時〜19時
+                    step=1,
+                    format="%d時"
+                )
+                start_hour, end_hour = time_range
+
+                # 選択した時間帯を表示
+                #st.write(f"選択した診療時間: {start_hour}時 〜 {end_hour}時")
                 
                 slot_duration = st.selectbox("予約枠の時間", [15, 30, 45, 60], index=1)
                 capacity = st.number_input("予約枠の人数", min_value=1, max_value=10, value=2)
@@ -198,9 +206,14 @@ else:
                         headers = {"Authorization": f"Bearer {st.session_state.token}"}
                         days_values = [day["value"] for day in days]
                         
-                        data = {
+                        # クエリパラメータを設定
+                        params = {
                             "start_date": start_date.strftime("%Y-%m-%d"),
-                            "end_date": end_date.strftime("%Y-%m-%d"),
+                            "end_date": end_date.strftime("%Y-%m-%d")
+                        }
+                        
+                        # リクエストボディを設定
+                        data = {
                             "days_of_week": days_values,
                             "start_hour": start_hour,
                             "end_hour": end_hour,
@@ -211,7 +224,8 @@ else:
                         response = requests.post(
                             f"{API_URL}/slots/bulk",
                             headers=headers,
-                            json=data
+                            params=params,  # クエリパラメータを使用
+                            json=data       # リクエストボディをJSON形式で送信
                         )
                         
                         if response.status_code == 200:
